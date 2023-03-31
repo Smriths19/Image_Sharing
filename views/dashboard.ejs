@@ -39,61 +39,28 @@
         </div>
     </div>
 
+         <% values.forEach( x => { %>
+            <section>
+                <div class="box">
+                    <div class="name">
+                        <h4><%= x.name %></h4>
+                    </div>
 
-
-    <section>
-        <div class="box">
-            <div class="name"><h4><%= user %></h4></div>
-            <div class="timestamp"><p><%= timeStamp %></p>
-            </div>
-            <div class="img">
-                <img width="700" height="700" src="data:<%= data %>;base64,<%= img %>" />
-            </div>
-            <div class="like">
-                <button><i class='bx bxs-heart bx-border'></i></button> <%= likes %>
-            </div>
-            <div class="comment">
-                <input type="text" id="comment" name="comment" placeholder="Leave a comment here">
-                <input type="button" value="Comment">
-            </div>
-        </div>
-    </section>
-
-    <!-- <section>
-        <div class="box">
-            <div class="name"><h4><%= user %></h4></div>
-            <div class="timestamp"><p>10:04:23</p></div>
-            <div class="img">
-                <img src="https://cdn.pixabay.com/photo/2021/04/12/08/10/coffee-6171744_960_720.jpg">
-            </div>
-            <div class="like">
-                <button>LIKE</button>
-                <span> No. of Likes: </span>
-            </div>
-            <div class="comment">
-                <input type="button" value="Comment" onclick="clickMe()">
-                <input type="text" id="show">
-            </div>
-        </div>
-    </section> -->
-
-
-    <!-- <script>
-        function clickMe() {
-            var text = document.getElementById("show");
-            if (!text.style.display) {
-                text.style.display = "none";
-            }
-            if (text.style.display === "none") {
-                text.style.display = "grid";
-                text.style.width = "800px";
-            } else {
-                text.style.display = "none";
-            }
-        }
-    </script> -->
-
-
+                    <div class="timestamp"><p><%= x.timestamp %></p>
+                    </div>
+                    <div class="img">
+                        <img width="700" height="700" src="data:<%= x.data %>;base64,<%= x.img %>" />
+                    </div>
+                    <div class="like">
+                        <button><i class='bx bxs-heart bx-border'></i></button> <%= x.likes %>
+                    </div>
+                    <div class="comment">
+                        <input type="text" id="comment" name="comment" placeholder="Leave a comment here">
+                        <input type="button" value="Comment">
+                    </div>
+                </div>
+            </section>
+        <% }) %>
 
 </body>
 </html>
