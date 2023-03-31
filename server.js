@@ -75,17 +75,21 @@ app.get('/register', (req, res) => {
 app.get('/dashboard', (req, res) => {
   //res.render('dashboard', {user: req.user.firstName})
   pool.query(
-    `SELECT "creationTime", likes, image, "mimeType"
-    FROM public."Photo"
-    ORDER BY "creationTime" DESC`, (err, results) => {
+    `SELECT ph."creationTime", ph.likes, ph.image, ph."mimeType", u."firstName", u."lastName"
+    FROM public."Photo" ph, public."User" u
+    WHERE ph."userID" = u."userID"
+    ORDER BY ph."creationTime" DESC`, (err, results) => {
       if(err) {
         throw err;
       }
-       const temp = results.rows
-        console.log(temp[1])
-        var base64EncodedStr = temp[0].image.toString("base64");
-        const temp2 = {user: req.user.firstName, data: temp[0].mimeType, img: base64EncodedStr, likes: temp[0].likes, timeStamp: temp[0].creationTime}
-        console.log(temp2)
+       let values = []
+       const myArray = results.rows
+       myArray.forEach((x, index, array) => {
+            const  temp = {data: x.mimeType, img: x.image.toString("base64"), likes: x.likes, timeStamp: x.creationTime, name: x.firstName + " " + x.lastName}
+            values.push(temp)
+       });
+
+        const temp2 = {user: req.user.firstName, values: values}
         res.render('dashboard', temp2)
     }
   )    
