@@ -79,6 +79,7 @@ div.timestamp {
 
 .like {
     float: left;
+    background-color: #FAFAFA;
 }
 
 
@@ -112,4 +113,18 @@ div.timestamp {
 
 #logout a {
     color: linear-gradient(135deg, #71b7e6, #9b59b6);
+}
+
+
+.imgComment h5 {
+    float: left;
+}
+
+.imgComment p {
+    float: right;
+}
+
+
+.photoID input[type=text] {
+    display: none;
 }
