@@ -13,24 +13,6 @@ const initializePassport = require('./configPassport')
 
 initializePassport(passport);
 
-// const { Pool, Client } = require('pg')
-// const { password } = require('pg/lib/defaults')
-// const connectionString = 'postgresql://postgres:tooLittle19!@localhost:8000/instagram'
-// const pool = new Pool({
-// connectionString,
-// })
- 
-// const query = {
-//     text: 'SELECT * FROM public."User"',
-//     types: {
-//       getTypeParser: () => val => val,
-//     },
-//   }
-
-// pool.query(query, (err, res) => {
-//   console.log(err, res)
-// })
-
 
 //middlewares
 app.set('view engine', 'ejs')
@@ -73,9 +55,9 @@ app.get('/register', (req, res) => {
 })
 
 app.get('/dashboard', (req, res) => {
-  //res.render('dashboard', {user: req.user.firstName})
+  
   pool.query(
-    `SELECT ph."creationTime", ph.likes, ph.image, ph."mimeType", u."firstName", u."lastName"
+    `SELECT ph."photoID", ph."creationTime", ph.likes, ph.image, ph."mimeType", u."userID", u."firstName", u."lastName"
     FROM public."Photo" ph, public."User" u
     WHERE ph."userID" = u."userID"
     ORDER BY ph."creationTime" DESC`, (err, results) => {
@@ -84,15 +66,61 @@ app.get('/dashboard', (req, res) => {
       }
        let values = []
        const myArray = results.rows
-       myArray.forEach((x, index, array) => {
-            const  temp = {data: x.mimeType, img: x.image.toString("base64"), likes: x.likes, timeStamp: x.creationTime, name: x.firstName + " " + x.lastName}
-            values.push(temp)
-       });
+      //  myArray.forEach((x, index, array) => {
+      // // values.push(fetchValue(x))
+      //  await fetchValue(x).then(result => {
+      //   console.log(result)
+      //   values.push(result)})
+      //  });
 
-        const temp2 = {user: req.user.firstName, values: values}
+      for(const x of myArray) {
+        values.push(fetchValue(x))
+      }
+       
+        const temp2 = {user: req.user.firstName + " " + req.user.lastName, username: req.user.firstName, values: values}
         res.render('dashboard', temp2)
     }
   )    
+})
+
+     function fetchValue(x) {
+      const comment = fetchComments(x.photoID)
+      const temp = {comment: comment, photoid: x.photoID, userid: x.userID, data: x.mimeType, img: x.image.toString("base64"), likes: x.likes, timeStamp: x.creationTime, name: x.firstName + " " + x.lastName}
+      console.log(temp)
+      return temp
+    }
+
+   function fetchComments(photoid) {
+    const res = async function(photoid) {
+      return await pool.query(
+        `SELECT cmt."commentStr", cmt."createdTime", u."firstName" || ' ' || u."lastName" fullName
+        FROM public."Comments" cmt, public."User" u
+        WHERE cmt."userID" = u."userID"
+        AND cmt."photoID" = $1  
+        ORDER BY cmt."createdTime" DESC`, [photoid]
+      )
+    }
+    return res.call
+  //  console.log(res)
+  }
+  
+app.post('/comment', (req, res) => {
+  let body = req.body
+  const photoid = body.photoid
+  const comment = body.comment
+  const userid = req.user.userID
+
+  console.log({userid, photoid, comment})
+  pool.query(
+    `INSERT INTO public."Comments"("photoID", "userID", "commentStr", "createdTime")
+      VALUES ($1, $2, $3, NOW())`, 
+      [photoid, userid, comment], (err) => {
+         if(err) {
+           throw err;
+         }
+          //console.log(results.rows)
+        }
+  )
 })
 
 // app.get('/logout', (req, res) => {
@@ -148,7 +176,7 @@ if(password != password2) {
                       if(err) {
                         throw err;
                       }
-                       console.log(results.rows)
+                      //console.log(results.rows)
                       req.flash("success", "You are now a registered member. You can now log in.")
                       res.redirect('/login')
                    }  
