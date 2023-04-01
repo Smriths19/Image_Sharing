@@ -15,7 +15,7 @@
     </div>
  
     <div class="title">
-        <h1>Welcome, <%= user %></h1>
+        <h1>Welcome, <%= username %></h1>
     </div>
 <div class="section">
    
@@ -46,7 +46,7 @@
                         <h4><%= x.name %></h4>
                     </div>
 
-                    <div class="timestamp"><p><%= x.timestamp %></p>
+                    <div class="timestamp"><p><%= x.timeStamp %></p>
                     </div>
                     <div class="img">
                         <img width="700" height="700" src="data:<%= x.data %>;base64,<%= x.img %>" />
@@ -54,10 +54,22 @@
                     <div class="like">
                         <button><i class='bx bxs-heart bx-border'></i></button> <%= x.likes %>
                     </div>
-                    <div class="comment">
-                        <input type="text" id="comment" name="comment" placeholder="Leave a comment here">
-                        <input type="button" value="Comment">
+                    <div class="container">
+                        <div class="user">
+                            <h5><%= user %></h5>
+                        </div>
+                        <form action="/comment" method="POST">
+                            <input type="text" id="comment" name="comment" placeholder="Leave a comment here">
+                            <input type="submit" value="Comment"/>
+                            <input type="hidden" id="photoid" name="photoid" value="<%= x.photoid %>" />  
+                            
+                        </form>
                     </div>
+
+                        <div class="imgComment">
+                            <h5></h5>
+                            <p> </p>
+                        </div> 
                 </div>
             </section>
         <% }) %>
