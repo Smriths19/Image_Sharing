@@ -20,9 +20,9 @@ app.use(express.static("public"));
 app.use(express.urlencoded({ extended: false }))
 
 app.use(session({
-    secret: "secret",
-    resave: false,
-    saveUninitialized: false
+  secret: "secret",
+  resave: false,
+  saveUninitialized: false
 }))
 
 //middleware for passport
@@ -39,88 +39,83 @@ app.use(
     abortOnLimit: true,
     limitHandler: fileTooBig,
   })
-);
+  );
 
 
 app.get('/', (req, res) => {
-    res.render('index')
+  res.render('index')
 })
 
 app.get('/login', (req, res) => {
-    res.render('login')
+  res.render('login')
 })
 
 app.get('/register', (req, res) => {
-    res.render('register')
+  res.render('register')
 })
 
-app.get('/dashboard', (req, res) => {
-  
-  pool.query(
+app.get('/dashboard', async (req, res) => {
+
+  const result = await fetchDashboard()
+
+  const dashboard = {user: req.user.firstName + " " + req.user.lastName, username: req.user.firstName, values: result}
+
+  res.render('dashboard', dashboard)
+
+})
+
+async function fetchDashboard() {
+
+  let values = []
+
+  const result = await pool.query(
     `SELECT ph."photoID", ph."creationTime", ph.likes, ph.image, ph."mimeType", u."userID", u."firstName", u."lastName"
     FROM public."Photo" ph, public."User" u
     WHERE ph."userID" = u."userID"
-    ORDER BY ph."creationTime" DESC`, (err, results) => {
-      if(err) {
-        throw err;
-      }
-       let values = []
-       const myArray = results.rows
-      //  myArray.forEach((x, index, array) => {
-      // // values.push(fetchValue(x))
-      //  await fetchValue(x).then(result => {
-      //   console.log(result)
-      //   values.push(result)})
-      //  });
+    ORDER BY ph."creationTime" DESC`)
 
-      for(const x of myArray) {
-        values.push(fetchValue(x))
-      }
-       
-        const temp2 = {user: req.user.firstName + " " + req.user.lastName, username: req.user.firstName, values: values}
-        res.render('dashboard', temp2)
-    }
-  )    
-})
+  const myArray = result.rows
 
-     function fetchValue(x) {
-      const comment = fetchComments(x.photoID)
-      const temp = {comment: comment, photoid: x.photoID, userid: x.userID, data: x.mimeType, img: x.image.toString("base64"), likes: x.likes, timeStamp: x.creationTime, name: x.firstName + " " + x.lastName}
-      console.log(temp)
-      return temp
-    }
-
-   function fetchComments(photoid) {
-    const res = async function(photoid) {
-      return await pool.query(
-        `SELECT cmt."commentStr", cmt."createdTime", u."firstName" || ' ' || u."lastName" fullName
-        FROM public."Comments" cmt, public."User" u
-        WHERE cmt."userID" = u."userID"
-        AND cmt."photoID" = $1  
-        ORDER BY cmt."createdTime" DESC`, [photoid]
-      )
-    }
-    return res.call
-  //  console.log(res)
+  for(const x of myArray) {
+    values.push(await fetchImage(x))
   }
-  
+
+  return values
+}
+
+async function fetchImage(x) {
+  const comment = await fetchComments(x.photoID)
+  const imageInfo = {comment: comment, photoid: x.photoID, userid: x.userID, data: x.mimeType, img: x.image.toString("base64"), likes: x.likes, timeStamp: x.creationTime, name: x.firstName + " " + x.lastName}
+  return imageInfo
+}
+
+async function fetchComments(photoid) {
+  const res = await pool.query(
+    `SELECT cmt."commentStr", cmt."createdTime", u."firstName" || ' ' || u."lastName" fullName
+    FROM public."Comments" cmt, public."User" u
+    WHERE cmt."userID" = u."userID"
+    AND cmt."photoID" = $1  
+    ORDER BY cmt."createdTime" DESC`, [photoid]
+    )
+  return res.rows
+}
+
 app.post('/comment', (req, res) => {
   let body = req.body
   const photoid = body.photoid
   const comment = body.comment
   const userid = req.user.userID
 
-  console.log({userid, photoid, comment})
   pool.query(
     `INSERT INTO public."Comments"("photoID", "userID", "commentStr", "createdTime")
-      VALUES ($1, $2, $3, NOW())`, 
-      [photoid, userid, comment], (err) => {
-         if(err) {
-           throw err;
-         }
+    VALUES ($1, $2, $3, NOW())`, 
+    [photoid, userid, comment], (err) => {
+     if(err) {
+       throw err;
+     }
           //console.log(results.rows)
-        }
-  )
+   }
+   )
 })
 
 // app.get('/logout', (req, res) => {
@@ -134,98 +129,98 @@ app.post('/register', async (req, res) => {
 
  // console.log({firstName, lastName, email, password, password2})
 
-let errors = [];
+  let errors = [];
 
-if(!firstName || !lastName || !email || !password || !password2)
-{
-  errors.push({ message: "Please enter all fields" })
-}
+  if(!firstName || !lastName || !email || !password || !password2)
+  {
+    errors.push({ message: "Please enter all fields" })
+  }
 
-if(password.length < 5) {
-  errors.push({ message: "Password should be at least 6 characters"})
-}
+  if(password.length < 5) {
+    errors.push({ message: "Password should be at least 6 characters"})
+  }
 
-if(password != password2) {
-  errors.push({ message: "Passwords do not match"})
-}  
+  if(password != password2) {
+    errors.push({ message: "Passwords do not match"})
+  }  
 
   if(errors.length > 0) {
     res.render('register', {errors })
   }
   else {
       //Form validation complete
-      let passwordHashed = await bcrypt.hash(password, 10)
+    let passwordHashed = await bcrypt.hash(password, 10)
      // console.log(passwordHashed)
     
-      pool.query(
-        `SELECT * FROM public."User"
-        WHERE email = $1`, [email], (error, results)=> {
-          if(error) {
-            throw error
-          }
+    pool.query(
+      `SELECT * FROM public."User"
+      WHERE email = $1`, [email], (error, results)=> {
+        if(error) {
+          throw error
+        }
        //   console.log(results.rows)
-            if(results.rows.length > 0) {
-              errors.push({ message: "Email already registered" }) 
-              res.render('register', {errors})
+        if(results.rows.length > 0) {
+          errors.push({ message: "Email already registered" }) 
+          res.render('register', {errors})
+        }
+        else {
+          pool.query(
+            `INSERT INTO public."User" ("firstName", "lastName", email, "passwordHash")
+            VALUES ($1, $2, $3, $4)`, 
+            [firstName, lastName, email, passwordHashed], (err, results) => {
+              if(err) {
+                throw err;
               }
-              else {
-                pool.query(
-                  `INSERT INTO public."User" ("firstName", "lastName", email, "passwordHash")
-                   VALUES ($1, $2, $3, $4)`, 
-                   [firstName, lastName, email, passwordHashed], (err, results) => {
-                      if(err) {
-                        throw err;
-                      }
                       //console.log(results.rows)
-                      req.flash("success", "You are now a registered member. You can now log in.")
-                      res.redirect('/login')
-                   }  
-                )
-              }
-           }
-        )
-    }
-  })
+              req.flash("success", "You are now a registered member. You can now log in.")
+              res.redirect('/login')
+            }  
+            )
+        }
+      }
+      )
+  }
+})
 
-  app.post('/login', passport.authenticate('local', {
-    successRedirect: '/dashboard',
-    failureRedirect: '/login',
-    failureFlash: true
-  })
-  )
+app.post('/login', passport.authenticate('local', {
+  successRedirect: '/dashboard',
+  failureRedirect: '/login',
+  failureFlash: true
+})
+)
 
-  const acceptedTypes = ["image/gif", "image/jpeg", "image/png"];
+const acceptedTypes = ["image/gif", "image/jpeg", "image/png"];
 
-  app.post('/upload', async (req, res) => {
-    const userID = req.user.userID;
-    const image = req.files.picture;
+app.post('/upload', async (req, res) => {
+  const userID = req.user.userID;
+  const image = req.files.picture;
   if (acceptedTypes.indexOf(image.mimetype) >= 0) {
     console.log(image)
-       pool.query(`INSERT INTO public."Photo"
-       ("userID", "creationTime", likes, image, "mimeType")
-        VALUES ($1, NOW(), 0, $2, $3)`, [userID, image.data, image.mimetype], (err, results) => {
-          if(err) {
-            throw err;
-          }
-           console.log(results.rows)
-        } )
-    }
-    else {
-      req.flash("error", "Uploaded image type cannot be identified")
-      res.redirect('/dashboard')
-    }
-    res.redirect('/dashboard')
-                      
-  })
-
-  function fileTooBig(req, res, next) {
-    res.render("dashboard.ejs", {
-      name: "",
-      messages: { error: "Filesize too large" },
-    });
+    pool.query(`INSERT INTO public."Photo"
+     ("userID", "creationTime", likes, image, "mimeType")
+     VALUES ($1, NOW(), 0, $2, $3)`, [userID, image.data, image.mimetype], (err, results) => {
+      if(err) {
+        throw err;
+      }
+      console.log(results.rows)
+    } )
   }
+  else {
+    req.flash("error", "Uploaded image type cannot be identified")
+    res.redirect('/dashboard')
+  }
+  res.redirect('/dashboard')
 
-  
+})
+
+function fileTooBig(req, res, next) {
+  res.render("dashboard.ejs", {
+    name: "",
+    messages: { error: "Filesize too large" },
+  });
+}
+
+
 app.listen(PORT, ()=> {
-    console.log("Listening...")
+  console.log("Listening...")
 })
