@@ -11,21 +11,20 @@
 <body>
 
     <div id="logout">
-    <a href="/login" class="logout">Logout</a>
+    <a href="/logout" class="logout">Logout</a>
     </div>
  
     <div class="title">
         <h1>Welcome, <%= username %></h1>
     </div>
 <div class="section">
-   
-<div class="container">
+    <div class="container">
     <h2>What's On Your Mind?</h2>
             <div class="img-upload">
             <i class="bx bxs-cloud-upload icon"></i>
             <h3>Upload Image</h3>
             <p>Accepted file types are .jpg, .png, .gif, not exceeding 2MB in file size</p>
-            <form action="/upload" method="post"
+            <form action="/upload" method="POST"
                 enctype="multipart/form-data">
                 <input type="file" name="picture">
                 <input type="submit"> 
@@ -46,33 +45,48 @@
                         <h4><%= x.name %></h4>
                     </div>
 
-                    <div class="timestamp"><p><%= x.timeStamp %></p>
+                    <div class="timestamp"><h4><%= x.timeStamp.toDateString() %></h4>
                     </div>
                     <div class="img">
                         <img width="700" height="700" src="data:<%= x.data %>;base64,<%= x.img %>" />
                     </div>
                     <div class="like">
-                        <button><i class='bx bxs-heart bx-border'></i></button> <%= x.likes %>
+                        <!-- <form action="/like" method="POST"> -->
+                            <span> <button onclick="like()"><i class='bx bxs-heart bx-border'></i></button> 
+                        <span id="increment"><%= x.likes %></span>
+                    <!-- </form> -->
                     </div>
-                    <div class="container">
-                        <div class="user">
-                            <h5><%= user %></h5>
-                        </div>
+                    <div class="section2">
+                            <h5><%= user %></h5> 
                         <form action="/comment" method="POST">
                             <input type="text" id="comment" name="comment" placeholder="Leave a comment here">
                             <input type="submit" value="Comment"/>
                             <input type="hidden" id="photoid" name="photoid" value="<%= x.photoid %>" />  
-                            
                         </form>
                     </div>
-
-                        <div class="imgComment">
-                            <h5></h5>
-                            <p> </p>
-                        </div> 
+                     <div class="imgComment">
+                            <% x.comment.forEach( y => { %>
+                            <p><span id="name"><u><b><%= y.fullname %></b></u></span> <span id="comment"><%= y.commentStr %></span> <span id="time"><%= y.createdTime.toDateString() %></span></p>
+                            <% }) %>
+                        </div>
+                    </div> 
+                </div>
                 </div>
             </section>
         <% }) %>
 
+        <script>
+            var isLiked=false;
+            var a=0;
+                function like() {
+                isLiked=!isLiked;
+                if(isLiked) {
+                    a = document.getElementById("increment").innerHTML = parseInt(a)+1;
+                }
+                else {
+                a = document.getElementById("increment").innerHTML = parseInt(a)-1;
+                 }
+            }
+        </script>      
 </body>
 </html>
