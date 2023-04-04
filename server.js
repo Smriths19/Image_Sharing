@@ -46,15 +46,23 @@ app.get('/', (req, res) => {
   res.render('index')
 })
 
-app.get('/login', (req, res) => {
+app.get('/login', checkAuthenticated, (req, res) => {
   res.render('login')
 })
 
-app.get('/register', (req, res) => {
+app.get('/register', checkAuthenticated, (req, res) => {
   res.render('register')
 })
 
-app.get('/dashboard', async (req, res) => {
+app.get('/logout', function(req, res, next){
+  req.logout(function(err) {
+    if (err) { return next(err); }
+    req.flash("success", "You have successfully logged out")
+    res.redirect('/login');
+  });
+});
+
+app.get('/dashboard', checkNotAuthenticated, async (req, res) => {
 
   const result = await fetchDashboard()
 
@@ -100,6 +108,24 @@ async function fetchComments(photoid) {
   return res.rows
 }
 
+// app.post('/like', (req, res) => {
+//   let body = req.body
+//   const like = body.like
+//   const userid = req.user.userID
+
+//   pool.query(
+//     `INSERT INTO public."Photo"("userID", "likes")
+//     VALUES ($1, $2)`, 
+//     [userid, like], (err) => {
+//      if(err) {
+//        throw err;
+//      }
+//           console.log(results.rows)
+//    }
+//    )
+// })
+
+
 app.post('/comment', (req, res) => {
   let body = req.body
   const photoid = body.photoid
@@ -118,11 +144,6 @@ app.post('/comment', (req, res) => {
    )
 })
 
-// app.get('/logout', (req, res) => {
-//     req.logOut();
-//     req.flash("success", "You have successfully logged out")
-//     res.redirect('/login')
-// })
 
 app.post('/register', async (req, res) => {
   let { firstName, lastName, email, password, password2 } = req.body
@@ -188,6 +209,20 @@ app.post('/login', passport.authenticate('local', {
   failureFlash: true
 })
 )
+
+function checkAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return res.redirect('dashboard')
+  }
+  next();
+}
+
+function checkNotAuthenticated(req, res, next) {
+  if (req.isAuthenticated()) {
+    return next()
+  }
+  res.redirect('/login')
+}
 
 const acceptedTypes = ["image/gif", "image/jpeg", "image/png"];
 
