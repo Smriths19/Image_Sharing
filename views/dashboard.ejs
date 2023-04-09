@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="css/style2.css">
-    <link href='https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css' rel='stylesheet'>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
         <title>Dashboard page</title>
 </head>
 <body>
@@ -50,12 +50,34 @@
                     <div class="img">
                         <img width="700" height="700" src="data:<%= x.data %>;base64,<%= x.img %>" />
                     </div>
+                    <!-- <div class="like">
+                        <form action="/like" method="POST">
+                           <input name="like" id="like" type="hidden"><i onclick="toggleUp(this)" class="fa fa-thumbs-up"></i> </input>
+                            <span id="increment"><%= x.likes %></span> 
+                            <input type="hidden" id="photoid" name="photoid" value="<%= x.photoid %>" />  
+                        </form>
+                    
+                    </div> -->
+
                     <div class="like">
-                        <!-- <form action="/like" method="POST"> -->
-                            <span> <button onclick="like()"><i class='bx bxs-heart bx-border'></i></button> 
-                        <span id="increment"><%= x.likes %></span>
-                    <!-- </form> -->
+                        <form action="/like" method="POST">
+                        <input type="hidden" id="photoid" name="photoid" value="<%= x.photoid %>" /> 
+                        <input type="hidden" name="like" id="like" value=" <%= x.isLiked %> "/>   
+                        <button type="submit" name="like" value="like"> 
+                        <% if(x.isLiked) { %>
+                            <!--unlike-->
+                                <i onclick="toggleUp(this)" class="fa fa-thumbs-down"> </i>  
+                            <% } else { %>
+                            <!--like-->
+                                <i onclick="toggleDown(this)" class="fa fa-thumbs-up"></i>   
+                                <!-- <input type="hidden" name="like" id="like" value=" <%= x.isLiked %> "/>   
+                                <input type="hidden" id="photoid" name="photoid" value="<%= x.photoid %>" />   -->
+                                <% } %>
+                            </button> <%= x.likes %> 
+                            </form>
+                           
                     </div>
+                    
                     <div class="section2">
                             <h5><%= user %></h5> 
                         <form action="/comment" method="POST">
@@ -76,16 +98,12 @@
         <% }) %>
 
         <script>
-            var isLiked=false;
-            var a=0;
-                function like() {
-                isLiked=!isLiked;
-                if(isLiked) {
-                    a = document.getElementById("increment").innerHTML = parseInt(a)+1;
-                }
-                else {
-                a = document.getElementById("increment").innerHTML = parseInt(a)-1;
-                 }
+            function toggleUp(x) {
+                x.classList.toggle("fa-thumbs-up");
+            }
+
+            function toggleDown(x) {
+                x.classList.toggle("fa-thumbs-down");
             }
         </script>      
 </body>
