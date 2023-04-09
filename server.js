@@ -64,7 +64,7 @@ app.get('/logout', function(req, res, next){
 
 app.get('/dashboard', checkNotAuthenticated, async (req, res) => {
 
-  const result = await fetchDashboard()
+  const result = await fetchDashboard(req.user.userID)
 
   const dashboard = {user: req.user.firstName + " " + req.user.lastName, username: req.user.firstName, values: result}
 
@@ -72,15 +72,17 @@ app.get('/dashboard', checkNotAuthenticated, async (req, res) => {
 
 })
 
-async function fetchDashboard() {
+async function fetchDashboard(loggedInUserID) {
 
   let values = []
 
   const result = await pool.query(
-    `SELECT ph."photoID", ph."creationTime", ph.likes, ph.image, ph."mimeType", u."userID", u."firstName", u."lastName"
-    FROM public."Photo" ph, public."User" u
+    `SELECT ph."photoID", ph."creationTime", (SELECT count(upm."userID") FROM public."UserPhotoMapping" upm
+    WHERE upm."photoID" = ph."photoID") likes, ph.image, ph."mimeType", u."userID", u."firstName", u."lastName", CASE when upm."photoID" ISNULL THEN false ELSE true END isLiked 
+    FROM public."User" u, public."Photo" ph
+    LEFT JOIN public."UserPhotoMapping" upm ON ph."photoID" = upm."photoID" AND upm."userID" = $1
     WHERE ph."userID" = u."userID"
-    ORDER BY ph."creationTime" DESC`)
+    ORDER BY ph."creationTime" DESC`, [loggedInUserID])
 
   const myArray = result.rows
 
@@ -93,7 +95,7 @@ async function fetchDashboard() {
 
 async function fetchImage(x) {
   const comment = await fetchComments(x.photoID)
-  const imageInfo = {comment: comment, photoid: x.photoID, userid: x.userID, data: x.mimeType, img: x.image.toString("base64"), likes: x.likes, timeStamp: x.creationTime, name: x.firstName + " " + x.lastName}
+  const imageInfo = {comment: comment, isLiked: x.isliked, photoid: x.photoID, userid: x.userID, data: x.mimeType, img: x.image.toString("base64"), likes: x.likes, timeStamp: x.creationTime, name: x.firstName + " " + x.lastName}
   return imageInfo
 }
 
@@ -108,22 +110,35 @@ async function fetchComments(photoid) {
   return res.rows
 }
 
-// app.post('/like', (req, res) => {
-//   let body = req.body
-//   const like = body.like
-//   const userid = req.user.userID
-
-//   pool.query(
-//     `INSERT INTO public."Photo"("userID", "likes")
-//     VALUES ($1, $2)`, 
-//     [userid, like], (err) => {
-//      if(err) {
-//        throw err;
-//      }
-//           console.log(results.rows)
-//    }
-//    )
-// })
+app.post('/like', (req, res) => {
+  let body = req.body
+  let userid = req.user.userID
+  let photoid = body.photoID
+  let isLiked = body.like
+  if(isLiked) {
+    pool.query(
+      `DELETE FROM public."UserPhotoMapping" upm
+      WHERE upm."userID" = $1 AND upm."photoID" = $2`
+    ), [userid, photoid], (err) => {
+      if(err) {
+        throw err;
+      }
+           console.log(results.rows)
+    }
+  }
+  else {
+    pool.query(
+      `INSERT INTO public."UserPhotoMapping"(
+        "userID", "photoID")
+        VALUES ($1, $2)`, [userid, photoid], (err) => {
+          if(err) {
+            throw err;
+          }
+               //console.log(results.rows)
+        }
+    )
+  }
+})
 
 
 app.post('/comment', (req, res) => {
@@ -224,7 +239,7 @@ function checkNotAuthenticated(req, res, next) {
   res.redirect('/login')
 }
 
-const acceptedTypes = ["image/gif", "image/jpeg", "image/png"];
+const acceptedTypes = ["image/gif", "image/jpg", "image/png"];
 
 app.post('/upload', async (req, res) => {
   const userID = req.user.userID;
@@ -232,8 +247,8 @@ app.post('/upload', async (req, res) => {
   if (acceptedTypes.indexOf(image.mimetype) >= 0) {
     console.log(image)
     pool.query(`INSERT INTO public."Photo"
-     ("userID", "creationTime", likes, image, "mimeType")
-     VALUES ($1, NOW(), 0, $2, $3)`, [userID, image.data, image.mimetype], (err, results) => {
+     ("userID", "creationTime", image, "mimeType")
+     VALUES ($1, NOW(), $2, $3)`, [userID, image.data, image.mimetype], (err, results) => {
       if(err) {
         throw err;
       }
